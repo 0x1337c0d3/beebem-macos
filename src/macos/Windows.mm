@@ -134,7 +134,8 @@ BOOL PathCanonicalize(LPSTR pszBuf, LPCSTR pszPath)
 int SHCreateDirectoryEx(HWND /*hWnd*/, LPCSTR pszPath, const void * /*psa*/)
 {
     int result = mkdir(pszPath, S_IRWXU | S_IRWXG | S_IRWXO);
-    return result == 0 ? 0 : errno;
+    if (result == 0 || errno == EEXIST) return 0;  // already exists is fine
+    return errno;
 }
 
 DWORD GetFullPathName(LPCSTR pszFileName, DWORD BufferLength,

@@ -3,6 +3,7 @@
 
 .aidex/
 media/
+build/
 
 ### C++ ###
 # Prerequisites

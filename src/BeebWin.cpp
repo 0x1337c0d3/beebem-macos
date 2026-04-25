@@ -38,8 +38,11 @@ Boston, MA  02110-1301, USA.
 #include <stdio.h>
 
 #ifndef WIN32
+#include <errno.h>
+#include <string.h>
 #include <pwd.h>
 #include <ftw.h>
+#include <sys/stat.h>
 #endif
 
 #include "BeebWin.h"
@@ -601,8 +604,21 @@ bool BeebWin::Initialise()
 	}
 
 	char FontFilename[MAX_PATH];
+
+	#ifdef __APPLE__
+	// Font lives in UserData/ (copied there on first run); fall back to bundle.
+	strcpy(FontFilename, GetUserDataPath());
+	AppendPath(FontFilename, "Teletext.fnt");
+	if (!FileExists(FontFilename))
+	{
+		strcpy(FontFilename, GetAppPath());
+		AppendPath(FontFilename, "UserData");
+		AppendPath(FontFilename, "Teletext.fnt");
+	}
+	#else
 	strcpy(FontFilename, GetAppPath());
 	AppendPath(FontFilename, "Teletext.fnt");
+	#endif
 
 	if (!BuildMode7Font(FontFilename))
 	{
@@ -1304,6 +1320,7 @@ void BeebWin::CreateBitmap()
 	#elif defined(__APPLE__)
 
 	m_screen = (char*)g_videoBuffer;
+	m_screen_blur = (char*)calloc(BEEBEM_BITMAP_WIDTH * BEEBEM_BITMAP_HEIGHT, 1);
 	SetBeebEmEmulatorCoresPalette(cols, m_MonitorType);
 
 	#else
@@ -1331,13 +1348,13 @@ void BeebWin::ReleaseBitmap()
 		m_hDCBitmap = nullptr;
 	}
 
+	#endif
+
 	if (m_screen_blur != nullptr)
 	{
 		free(m_screen_blur);
 		m_screen_blur = nullptr;
 	}
-
-	#endif
 }
 
 /****************************************************************************/
@@ -6331,6 +6348,23 @@ bool BeebWin::CheckUserDataPath(bool Persist)
 	// Check that the folder exists
 	if (!FolderExists(m_UserDataPath))
 	{
+		#ifdef __APPLE__
+
+		// On macOS, silently create ~/Library/Application Support/BeebEm
+		if (mkdir(m_UserDataPath, 0755) == 0)
+		{
+			CopyUserFiles = true;
+		}
+		else
+		{
+			int mkdirErr = errno;
+			Report(MessageType::Error, "Failed to create BeebEm data folder:\n  %s\n\n%s",
+			       m_UserDataPath, strerror(mkdirErr));
+			Success = false;
+		}
+
+		#else
+
 		if (Report(MessageType::Question,
 		           "BeebEm data folder does not exist:\n  %s\n\nCreate the folder?",
 		           m_UserDataPath) != MessageResult::Yes)
@@ -6357,6 +6391,8 @@ bool BeebWin::CheckUserDataPath(bool Persist)
 				Success = false;
 			}
 		}
+
+		#endif
 	}
 	else
 	{

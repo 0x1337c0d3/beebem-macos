@@ -273,7 +273,7 @@ if(APPLE)
         add_custom_command(TARGET BeebEm POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory
                 "${CMAKE_SOURCE_DIR}/UserData"
-                "$<TARGET_BUNDLE_CONTENT_DIR:BeebEm>/Resources"
+                "$<TARGET_BUNDLE_CONTENT_DIR:BeebEm>/Resources/UserData"
             COMMENT "Copying UserData into bundle Resources"
         )
     endif()

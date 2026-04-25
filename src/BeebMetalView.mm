@@ -172,6 +172,10 @@ static bool TranslateMacKey(unsigned short vk, int *row, int *col)
 // ------------------------------------------------------------------
 - (void)keyDown:(NSEvent *)event
 {
+    // macOS auto-repeats keyDown; ignore — the BBC OS handles its own key repeat
+    // via 50 Hz VSync tick counting, so repeated AppKit events cause wild repeating.
+    if (event.isARepeat) return;
+
     int row, col;
     if (TranslateMacKey(event.keyCode, &row, &col)) {
         if (row == -2) {
