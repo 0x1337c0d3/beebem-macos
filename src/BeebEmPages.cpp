@@ -1969,7 +1969,7 @@ static EG_BOOL Make_Speed(SDL_Surface *dst_ptr)
 	SDL_Rect win, loc;
 	SDL_Color col;
 
-	#define SPEED_COUNT 14
+	#define SPEED_COUNT 15
 
 	static const float speed[] =
 	{
@@ -1981,6 +1981,7 @@ static EG_BOOL Make_Speed(SDL_Surface *dst_ptr)
 		1.5,
 		1.25,
 		1.1,
+		1,
 		1,
 		0.9,
 		0.75,
@@ -1999,6 +2000,7 @@ static EG_BOOL Make_Speed(SDL_Surface *dst_ptr)
 		IDM_FIXEDSPEED1_5,
 		IDM_FIXEDSPEED1_25,
 		IDM_FIXEDSPEED1_1,
+		IDM_FIXEDSPEED1,
 		IDM_REALTIME,
 		IDM_FIXEDSPEED0_9,
 		IDM_FIXEDSPEED0_75,

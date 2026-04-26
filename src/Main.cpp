@@ -76,6 +76,80 @@ bool done = false;
 bool showing_menu = false;
 EG_Window *displayed_window_ptr = NULL;
 
+struct HeldKey {
+	int row;
+	int col;
+	int repeat_counter;
+	bool is_repeat;
+};
+
+static const int KEY_REPEAT_DELAY = 50;
+static const int KEY_REPEAT_INTERVAL = 5;
+static const int MAX_HELD_KEYS = 16;
+static HeldKey m_HeldKeys[MAX_HELD_KEYS];
+static int m_NumHeldKeys = 0;
+
+void ProcessKeyRepeat()
+{
+	for (int i = 0; i < m_NumHeldKeys; i++)
+	{
+		HeldKey& key = m_HeldKeys[i];
+		if (!key.is_repeat)
+		{
+			key.repeat_counter++;
+			if (key.repeat_counter >= KEY_REPEAT_DELAY)
+			{
+				key.is_repeat = true;
+				key.repeat_counter = 0;
+			}
+		}
+		else
+		{
+			key.repeat_counter++;
+			if (key.repeat_counter >= KEY_REPEAT_INTERVAL)
+			{
+				BeebKeyUp(key.row, key.col);
+				BeebKeyDown(key.row, key.col);
+				key.repeat_counter = 0;
+			}
+		}
+	}
+}
+
+void AddHeldKey(int row, int col)
+{
+	if (row < 0 || col < 0 || m_NumHeldKeys >= MAX_HELD_KEYS)
+		return;
+
+	for (int i = 0; i < m_NumHeldKeys; i++)
+	{
+		if (m_HeldKeys[i].row == row && m_HeldKeys[i].col == col)
+			return;
+	}
+
+	m_HeldKeys[m_NumHeldKeys].row = row;
+	m_HeldKeys[m_NumHeldKeys].col = col;
+	m_HeldKeys[m_NumHeldKeys].repeat_counter = 0;
+	m_HeldKeys[m_NumHeldKeys].is_repeat = false;
+	m_NumHeldKeys++;
+}
+
+void RemoveHeldKey(int row, int col)
+{
+	for (int i = 0; i < m_NumHeldKeys; i++)
+	{
+		if (m_HeldKeys[i].row == row && m_HeldKeys[i].col == col)
+		{
+			for (int j = i; j < m_NumHeldKeys - 1; j++)
+			{
+				m_HeldKeys[j] = m_HeldKeys[j + 1];
+			}
+			m_NumHeldKeys--;
+			break;
+		}
+	}
+}
+
 void SetActiveWindow(EG_Window *window_ptr)
 {
 	displayed_window_ptr = window_ptr;
@@ -333,10 +407,12 @@ int main(int argc, char *argv[])
 								if (event.type == SDL_KEYDOWN)
 								{
 									BeebKeyDown(row, col);
+									AddHeldKey(row, col);
 								}
 								else
 								{
 									BeebKeyUp(row, col);
+									RemoveHeldKey(row, col);
 								}
 							}
 

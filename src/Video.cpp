@@ -678,6 +678,8 @@ static void VideoStartOfFrame()
 
     RenderFrame = mainWin->StartOfFrame();
 
+    ProcessKeyRepeat();
+
     CursorFieldCount--;
     Mode7FlashTrigger--;
     VideoState.InterlaceFrame = !VideoState.InterlaceFrame;

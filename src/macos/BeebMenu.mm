@@ -234,8 +234,10 @@ static void BuildEmulatorMenu()
     AddItem(speedMenu, @"2×",           IDM_FIXEDSPEED2,     @"");
     AddItem(speedMenu, @"1.5×",         IDM_FIXEDSPEED1_5,   @"");
     AddItem(speedMenu, @"1.25×",        IDM_FIXEDSPEED1_25,  @"");
-    AddItem(speedMenu, @"1.1×",         IDM_FIXEDSPEED1_1,   @"");
-    AddItem(speedMenu, @"0.9×",         IDM_FIXEDSPEED0_9,   @"");
+AddItem(speedMenu, @"1.1×",         IDM_FIXEDSPEED1_1,   @"");
+	AddItem(speedMenu, @"1×",           IDM_FIXEDSPEED1,     @"");
+	AddItem(speedMenu, @"Real time",      IDM_REALTIME,        @"");
+	AddItem(speedMenu, @"0.9×",         IDM_FIXEDSPEED0_9,   @"");
     AddItem(speedMenu, @"0.75×",        IDM_FIXEDSPEED0_75,  @"");
     AddItem(speedMenu, @"0.5×",         IDM_FIXEDSPEED0_5,   @"");
     AddItem(speedMenu, @"0.25×",        IDM_FIXEDSPEED0_25,  @"");

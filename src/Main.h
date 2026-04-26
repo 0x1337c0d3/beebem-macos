@@ -57,7 +57,11 @@ bool ToggleFullScreen();
 void ShowingMenu();
 void NoMenuShown();
 
-#ifndef __APPLE__
+#ifdef __APPLE__
+void ProcessKeyRepeat();
+void AddHeldKey(int row, int col);
+void RemoveHeldKey(int row, int col);
+#else
 void SetActiveWindow(EG_Window *window_ptr);
 #endif
 

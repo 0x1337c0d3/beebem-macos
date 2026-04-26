@@ -20,7 +20,81 @@ extern BeebWin *mainWin;
 
 #define AMX_LEFT_BUTTON   0x01
 #define AMX_MIDDLE_BUTTON 0x02
-#define AMX_RIGHT_BUTTON  0x04
+#define AMX_RIGHT_BUTTON 0x04
+
+struct HeldKey {
+    int row;
+    int col;
+    int repeat_counter;
+    bool is_repeat;
+};
+
+static const int KEY_REPEAT_DELAY = 50;
+static const int KEY_REPEAT_INTERVAL = 5;
+static const int MAX_HELD_KEYS = 16;
+static HeldKey m_HeldKeys[MAX_HELD_KEYS];
+static int m_NumHeldKeys = 0;
+
+void ProcessKeyRepeat()
+{
+    for (int i = 0; i < m_NumHeldKeys; i++)
+    {
+        HeldKey& key = m_HeldKeys[i];
+        if (!key.is_repeat)
+        {
+            key.repeat_counter++;
+            if (key.repeat_counter >= KEY_REPEAT_DELAY)
+            {
+                key.is_repeat = true;
+                key.repeat_counter = 0;
+            }
+        }
+        else
+        {
+            key.repeat_counter++;
+            if (key.repeat_counter >= KEY_REPEAT_INTERVAL)
+            {
+                BeebKeyUp(key.row, key.col);
+                BeebKeyDown(key.row, key.col);
+                key.repeat_counter = 0;
+            }
+        }
+    }
+}
+
+void AddHeldKey(int row, int col)
+{
+    if (row < 0 || col < 0 || m_NumHeldKeys >= MAX_HELD_KEYS)
+        return;
+
+    for (int i = 0; i < m_NumHeldKeys; i++)
+    {
+        if (m_HeldKeys[i].row == row && m_HeldKeys[i].col == col)
+            return;
+    }
+
+    m_HeldKeys[m_NumHeldKeys].row = row;
+    m_HeldKeys[m_NumHeldKeys].col = col;
+    m_HeldKeys[m_NumHeldKeys].repeat_counter = 0;
+    m_HeldKeys[m_NumHeldKeys].is_repeat = false;
+    m_NumHeldKeys++;
+}
+
+void RemoveHeldKey(int row, int col)
+{
+    for (int i = 0; i < m_NumHeldKeys; i++)
+    {
+        if (m_HeldKeys[i].row == row && m_HeldKeys[i].col == col)
+        {
+            for (int j = i; j < m_NumHeldKeys - 1; j++)
+            {
+                m_HeldKeys[j] = m_HeldKeys[j + 1];
+            }
+            m_NumHeldKeys--;
+            break;
+        }
+    }
+}
 
 // ------------------------------------------------------------------
 // macOS virtual key code → BBC key matrix table
@@ -172,9 +246,16 @@ static bool TranslateMacKey(unsigned short vk, int *row, int *col)
 // ------------------------------------------------------------------
 - (void)keyDown:(NSEvent *)event
 {
-    // macOS auto-repeats keyDown; ignore — the BBC OS handles its own key repeat
-    // via 50 Hz VSync tick counting, so repeated AppKit events cause wild repeating.
-    if (event.isARepeat) return;
+    // macOS auto-repeats keyDown; we now handle repeat internally synchronized
+    // with the display frame rate to work correctly at all FPS settings.
+    if (event.isARepeat) {
+        // Track auto-repeated key press - continue tracking but don't re-add
+        int row, col;
+        if (TranslateMacKey(event.keyCode, &row, &col) && row >= 0) {
+            AddHeldKey(row, col);
+        }
+        return;
+    }
 
     int row, col;
     if (TranslateMacKey(event.keyCode, &row, &col)) {
@@ -188,14 +269,16 @@ static bool TranslateMacKey(unsigned short vk, int *row, int *col)
             BeebKeyUp(0, 0);
         }
         BeebKeyDown(row, col);
+        if (row >= 0) AddHeldKey(row, col);
     }
 }
 
 - (void)keyUp:(NSEvent *)event
 {
     int row, col;
-    if (TranslateMacKey(event.keyCode, &row, &col)) {
-        if (row >= 0) BeebKeyUp(row, col);
+    if (TranslateMacKey(event.keyCode, &row, &col) && row >= 0) {
+        BeebKeyUp(row, col);
+        RemoveHeldKey(row, col);
     }
 }
 
@@ -205,8 +288,14 @@ static bool TranslateMacKey(unsigned short vk, int *row, int *col)
     NSEventModifierFlags flags = event.modifierFlags;
 
     auto applyMod = [](bool pressed, int row, int col) {
-        if (pressed) BeebKeyDown(row, col);
-        else         BeebKeyUp(row, col);
+        if (pressed) {
+            BeebKeyDown(row, col);
+            AddHeldKey(row, col);
+        }
+        else {
+            BeebKeyUp(row, col);
+            RemoveHeldKey(row, col);
+        }
     };
 
     applyMod((flags & NSEventModifierFlagShift)   != 0, 0, 0); // SHIFT

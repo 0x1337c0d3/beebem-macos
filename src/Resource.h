@@ -364,6 +364,7 @@
 #define IDM_FIXEDSPEED1_5               40160
 #define IDM_FIXEDSPEED1_25              40161
 #define IDM_FIXEDSPEED1_1               40162
+#define IDM_FIXEDSPEED1                40168
 #define IDM_FIXEDSPEED0_9               40163
 #define IDM_FIXEDSPEED0_75              40164
 #define IDM_FIXEDSPEED0_5               40165
